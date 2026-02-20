@@ -3,7 +3,7 @@ import sqlite3
 import os
 
 # -----------------------------
-# DATABASE PATH FIX
+# DATABASE PATH
 # -----------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 db_path = os.path.join(BASE_DIR, "notes.db")
@@ -18,10 +18,14 @@ app.secret_key = "secret123"
 def init_db():
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
-    c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT)")
-    c.execute("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, user_id INTEGER, content TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, content TEXT)")
     conn.commit()
     conn.close()
+
+
+# 🔥 IMPORTANT: Call DB init here (outside main)
+init_db()
 
 
 # -----------------------------
@@ -42,12 +46,15 @@ def register():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
+
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
         c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
         conn.commit()
         conn.close()
+
         return redirect("/login")
+
     return render_template("register.html")
 
 
@@ -59,14 +66,17 @@ def login():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
+
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
         c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
         user = c.fetchone()
         conn.close()
+
         if user:
             session["user_id"] = user[0]
             return redirect("/dashboard")
+
     return render_template("login.html")
 
 
@@ -77,11 +87,13 @@ def login():
 def dashboard():
     if "user_id" not in session:
         return redirect("/login")
+
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     c.execute("SELECT * FROM notes WHERE user_id=?", (session["user_id"],))
     notes = c.fetchall()
     conn.close()
+
     return render_template("dashboard.html", notes=notes)
 
 
@@ -92,12 +104,15 @@ def dashboard():
 def add():
     if "user_id" not in session:
         return redirect("/login")
+
     content = request.form["content"]
+
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     c.execute("INSERT INTO notes (user_id, content) VALUES (?, ?)", (session["user_id"], content))
     conn.commit()
     conn.close()
+
     return redirect("/dashboard")
 
 
@@ -108,11 +123,13 @@ def add():
 def delete(id):
     if "user_id" not in session:
         return redirect("/login")
+
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     c.execute("DELETE FROM notes WHERE id=?", (id,))
     conn.commit()
     conn.close()
+
     return redirect("/dashboard")
 
 
@@ -126,8 +143,7 @@ def logout():
 
 
 # -----------------------------
-# RUN
+# RUN (Local only)
 # -----------------------------
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
