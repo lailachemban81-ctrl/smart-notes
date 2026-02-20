@@ -8,7 +8,7 @@ app.secret_key = "secret123"
 DATABASE = "notes.db"
 
 # -----------------------
-# Database create
+# Database Init
 # -----------------------
 def init_db():
     conn = sqlite3.connect(DATABASE)
